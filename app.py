@@ -3,105 +3,128 @@ import pickle
 import numpy as np
 
 # 모델 로드
-with open("weights/rf_with_3_roc-7231.pkl", "rb") as f:
+with open("weights/final_model_with_3_features.pkl", "rb") as f:
     model_3 = pickle.load(f)
 
-with open("weights/rf_with_5_roc-6964.pkl", "rb") as f:
-    model_5 = pickle.load(f)
+with open("weights/final_model_with_9_features.pkl", "rb") as f:
+    model_9 = pickle.load(f)
 
-with open("weights/rf_with_10_roc-7648.pkl", "rb") as f:
-    model_10 = pickle.load(f)
+with open("weights/final_model_with_17_features.pkl", "rb") as f:
+    model_17 = pickle.load(f)
 
+# 예측 함수
 def predict(model_choice, *features):
+    features = np.array(features, dtype=np.float32)  # 입력 데이터 변환
     if model_choice == "3 Features Model":
         model = model_3
-        features = np.array(features[:3]).reshape(1, -1)
-    elif model_choice == "5 Features Model":
-        model = model_5
-        features = np.array(features[:5]).reshape(1, -1)
-    else:
-        model = model_10
-        features = np.array(features[:10]).reshape(1, -1)
+        features = features[:3].reshape(1, -1)
+    elif model_choice == "9 Features Model":
+        model = model_9
+        features = features[:9].reshape(1, -1)
+    else:  # "17 Features Model"
+        model = model_17
+        features = features[:17].reshape(1, -1)
     
     probs = model.predict_proba(features)[0]
     pred_class = np.argmax(probs)
-    return {"Healthy Probability": probs[0], "Moderate Probability": probs[1], "Severe Probability": probs[2], "Predicted Class": ["Healthy", "Moderate", "Severe"][pred_class]}
+    return {
+        "Healthy Probability": probs[0], 
+        "Moderate Probability": probs[1], 
+        "Severe Probability": probs[2], 
+        "Predicted Class": ["Healthy", "Moderate", "Severe"][pred_class]
+    }
 
+# 입력 UI 업데이트 함수
 def update_inputs(model_choice):
     if model_choice == "3 Features Model":
-        return [gr.update(visible=True)] * 3 + [gr.update(visible=False)] * 7
-    elif model_choice == "5 Features Model":
-        return [gr.update(visible=True)] * 5 + [gr.update(visible=False)] * 5
+        return [gr.update(visible=True)] * 3 + [gr.update(visible=False)] * 14
+    elif model_choice == "9 Features Model":
+        return [gr.update(visible=True)] * 9 + [gr.update(visible=False)] * 8
     else:
-        return [gr.update(visible=True)] * 10
+        return [gr.update(visible=True)] * 17
 
-# 3 환자 데이터
+# 환자 데이터 예제
 patient_data = [
-    [0.00950199627,	0.002873627955,	0.05917470807,	0.0006082679383,	0.005489430406,	0.01875617968,	0.002332945343,	0.001732186886,	0.07225121716,	0.00271592886], # Healthy
-    [0.0009448129617,	0.0002792178881,	0.009025529571,	0.003314391796,	0.01380996581,	0.0008029400889,	0.003318919653,	0,	0.001177242987,	0], # Moderate
-    [0,	0,	0.008366306725,	0,	0.0004390779363,	0.0003573890179,	0.001832895106,	0,	0.0008934725449,	0] # Severe
+    [0.001890597, 0.010370961, 0.008972138, 0.003136423, 0.064586282, 0.00177585, 0.027249728, 
+     0.005286567, 0.027689592, 0.000232226, 0.000663895, 0.007474961, 0.004833043, 0.000535487, 
+     0.020471447, 0.010196108, 0.021006934, 0.003415095],  # Healthy
+
+    [0.0, 0.000970547, 0.0, 0.000286823, 0.009271361, 0.002888386, 0.001596907, 
+     0.000798453, 0.010885322, 0.001894582, 0.003404667, 0.001119385, 0.000644964, 
+     0.0, 0.00082481, 0.007626392, 0.000728686, 0.002767455],  # Moderate
+
+    [0.0, 0.0, 0.001030931, 0.0, 0.008546474, 0.000213836, 0.002607752, 0.000570229, 
+     0.000735386, 0.001128288, 0.0, 0.0, 0.0, 0.0, 0.000365085, 0.000671062, 0.001703732, 0.0]  # Severe
 ]
 
+# 예제 데이터 채우기
 def fill_patient_data(model_choice, patient_index):
     data = patient_data[patient_index]
     if model_choice == "3 Features Model":
-        return data[:3] + [None] * 7
-    elif model_choice == "5 Features Model":
-        return data[:5] + [None] * 5
+        return data[:3] + [None] * 14
+    elif model_choice == "9 Features Model":
+        return data[:9] + [None] * 8
     else:
-        return data[:10]
+        return data[:17]
 
+# 입력 필드 초기화
 def clear_inputs():
-    return [None] * 10
+    return [None] * 17
 
 features = [
-   " CD8+ T Cell (EM CD27hi)", 
-    "Conventional DC",	
-    "CD4+ T Cell (naive)",	
-    "CD8+ T Cell (EMRA CD57hi)",
-    "NK Cell (CD56low CD16hi CD57hi)",	
-    "CD8+ T Cell (CM)",
-    "CD8+ NKT Cell",
-    "Plasmacytoid DC",
-    "CD4+ T Cell (EM CD27hi)",
-    "CD8+ T Cell (EM CD27low)"
+    "Plasmacytoid.DC",
+    "CD8..T.Cell..EM.CD27hi.",
+    "CD8..T.Cell..CD161..MAIT.",
+    "Conventional.DC",
+    "CD4..T.Cell..naive.",
+    "CD8..T.Cell..EMRA.CD57low.",
+    "CD8..T.Cell..naive.",
+    "gd.T.Cell",
+    "NK.Cell..CD56low.CD16hi.CD57low.",
+    "CD4..T.Cell..EM.CD57hi.",
+    "CD8..T.Cell..EMRA.CD57hi.",
+    "CD8..T.Cell..EM.CD57hi.",
+    "NK.Cell..CD56hi.CD16low.",
+    "ILC",
+    "CD8..T.Cell..CM.",
+    "B.Cell..naive.",
+    "CD4..T.Cell..EM.CD27low.",
+    "B.Cell..transitional."
 ]
-
 
 # Gradio UI 구성
 with gr.Blocks() as demo:
-    gr.Markdown("## COVID-19 Severity Classification App")
+    gr.Markdown("## Minimmune: COVID-19 Severity Classification")
+    
     with gr.Row():
         with gr.Column(scale=1):
-            model_choice = gr.Radio(["3 Features Model", "5 Features Model", "10 Features Model"], label="Choose Model", value="5 Features Model")
-            inputs = [gr.Number(label=features[i], visible=(i < 5)) for i in range(10)]
+            model_choice = gr.Radio(
+                ["3 Features Model", "9 Features Model", "17 Features Model"], 
+                label="Choose Model", value="17 Features Model"
+            )
+            
+            # Feature 입력 필드: 17개를 2개 Column으로 배치
+            with gr.Row():
+                with gr.Column():
+                    inputs = [gr.Number(label=features[i], visible=(i < 9)) for i in range(9)]
+                with gr.Column():
+                    inputs += [gr.Number(label=features[i], visible=(i >= 9)) for i in range(9, 17)]
+
             with gr.Group():
                 gr.Markdown("### Example Data")
                 with gr.Row():
                     gr.Button("Healthy").click(fill_patient_data, inputs=[model_choice, gr.State(0)], outputs=inputs)
                     gr.Button("Moderate").click(fill_patient_data, inputs=[model_choice, gr.State(1)], outputs=inputs)
                     gr.Button("Severe").click(fill_patient_data, inputs=[model_choice, gr.State(2)], outputs=inputs)
+            
             run_button = gr.Button("Run Prediction")
+        
         with gr.Column(scale=1):
             output = gr.JSON(label="Prediction Output")
             gr.Button("Clear").click(clear_inputs, outputs=inputs)
             
-            gr.Markdown("""
-            ### Model Performance Metrics
-            <div style='width: 100%; overflow-x: auto;'>
-            <table style='width: 100%; text-align: center; margin: auto;'>
-            <tr>
-                <th>Metric</th><th>Full model</th><th>10 features</th><th>5 features</th><th>3 features</th>
-            </tr>
-            <tr>
-                <td>Accuracy</td><td>0.6552</td><td>0.6899</td><td>0.6207</td><td>0.5517</td>
-            </tr>
-            <tr>
-                <td>AUROC</td><td>0.8096</td><td>0.7648</td><td>0.6964</td><td>0.7321</td>
-            </tr>
-            </table>
-            </div>
-            """)
+            gr.Markdown("### Model Performance Metrics")
+            gr.Image("figs/image.png")
     
     model_choice.change(update_inputs, inputs=[model_choice], outputs=inputs)
     run_button.click(predict, inputs=[model_choice] + inputs, outputs=output)
